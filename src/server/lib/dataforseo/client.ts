@@ -8,6 +8,7 @@ import {
   trackUsageCreditSpend,
 } from "@/server/billing/subscription";
 import type { BillingCustomerContext } from "@/server/billing/subscription";
+import { recordSelfHostedUsage } from "@/server/features/usage/services/UsageService";
 // Type-only namespace import: erased at compile, so the section modules (and
 // the SDK they pull in) still only load through loadDataforseoSections below.
 import type * as sections from "@/server/lib/dataforseo/sections";
@@ -73,6 +74,21 @@ export function createDataforseoClient(customer: BillingCustomerContext) {
         (s) => s.fetchQuestionsAnswers,
         "local_seo",
       ),
+      myBusinessInfoLive: meter(
+        customer,
+        (s) => s.fetchMyBusinessInfoLive,
+        "local_seo",
+      ),
+      reviewsTaskPost: meter(
+        customer,
+        (s) => s.postGoogleReviewsTasks,
+        "local_seo",
+      ),
+      extendedReviewsTaskPost: meter(
+        customer,
+        (s) => s.postExtendedReviewsTasks,
+        "local_seo",
+      ),
     },
     backlinks: {
       summary: meter(customer, (s) => s.fetchBacklinksSummary),
@@ -104,6 +120,12 @@ export function createDataforseoClient(customer: BillingCustomerContext) {
         customer,
         (s) => s.postRankCheckTasks,
         "rank_tracking",
+      ),
+      mapsRankLive: meter(customer, (s) => s.fetchMapsRankLive, "local_map_rank"),
+      mapsRankTaskPost: meter(
+        customer,
+        (s) => s.postMapsRankTasks,
+        "local_map_rank",
       ),
       local: meter(customer, (s) => s.fetchLocalSerp, "local_seo"),
     },
@@ -143,6 +165,15 @@ async function meterDataforseoCall<T>(
 
   if (!isHostedMode) {
     const result = await execute();
+    const feature =
+      creditFeature ?? mapDataforseoPathToCreditFeature(result.billing.path);
+    await recordSelfHostedUsage({
+      organizationId: customer.organizationId,
+      creditFeature: feature,
+      costUsd: result.billing.costUsd,
+      apiPath: result.billing.path.join("/"),
+      projectId: customer.projectId,
+    });
     return result.data;
   }
 

@@ -12,3 +12,17 @@ export const GSC_OAUTH_SCOPES = [
 
 export const GSC_SELF_HOSTED_SETUP_DOCS_URL =
   "https://github.com/every-app/open-seo/blob/main/docs/SELF_HOSTING_GOOGLE_SEARCH_CONSOLE.md";
+
+/** OAuth scope for Google Business Profile Performance API metrics. */
+export const GBP_PERFORMANCE_SCOPE =
+  "https://www.googleapis.com/auth/business.manage" as const;
+
+/** Better Auth providerId for the incremental Google Business Profile connection. */
+export const GBP_OAUTH_PROVIDER_ID = "google-business-profile";
+
+export const GBP_OAUTH_SCOPES = [
+  "openid",
+  "email",
+  "profile",
+  GBP_PERFORMANCE_SCOPE,
+] as const;

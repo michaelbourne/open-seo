@@ -46,6 +46,12 @@ declare namespace Cloudflare {
     // DataForSEO API Basic auth value (base64 of login:password)
     DATAFORSEO_API_KEY: string;
 
+    LOCAL_MAP_RANK_WORKFLOW: Workflow<
+      Parameters<
+        import("./src/server").LocalMapRankWorkflow["run"]
+      >[0]["payload"]
+    >;
+
     // OpenRouter API key for the in-app chat agents (onboarding + SAM).
     OPENROUTER_API_KEY?: string;
     // Optional OpenRouter model slug override (defaults in openrouter.ts).

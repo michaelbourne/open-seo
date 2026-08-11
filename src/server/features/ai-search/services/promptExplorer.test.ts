@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import type { LlmResponseResult } from "@/server/lib/dataforseoLlmSchemas";
 
-vi.mock("cloudflare:workers", () => ({ waitUntil: vi.fn() }));
+vi.mock("cloudflare:workers", () => ({ waitUntil: vi.fn(), env: { DB: {} } }));
+
+vi.mock("@/server/features/usage/services/UsageService", () => ({
+  recordSelfHostedUsage: vi.fn().mockResolvedValue(undefined),
+}));
 
 const { extractCitations } = await import("./promptExplorer");
 

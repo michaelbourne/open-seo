@@ -34,6 +34,18 @@ export const fetchRankCheckTaskResult: DataforseoSections["fetchRankCheckTaskRes
   async (input) =>
     (await loadDataforseoSections()).fetchRankCheckTaskResult(input);
 
+export const fetchMapsTaskResult: DataforseoSections["fetchMapsTaskResult"] =
+  async (input) =>
+    (await loadDataforseoSections()).fetchMapsTaskResult(input);
+
+export const fetchGoogleReviewsTaskResult: DataforseoSections["fetchGoogleReviewsTaskResult"] =
+  async (input) =>
+    (await loadDataforseoSections()).fetchGoogleReviewsTaskResult(input);
+
+export const fetchExtendedReviewsTaskResult: DataforseoSections["fetchExtendedReviewsTaskResult"] =
+  async (input) =>
+    (await loadDataforseoSections()).fetchExtendedReviewsTaskResult(input);
+
 export type {
   LabsKeywordDataItem,
   DomainRankedKeywordItem,
@@ -47,6 +59,9 @@ export type {
   RankCheckResult,
   RankCheckTaskInput,
   PostedRankCheckTask,
+  MapsRankTaskInput,
+  PostedMapsRankTask,
+  MapsRankCheckResult,
 } from "@/server/lib/dataforseo/serp";
 
 export type {

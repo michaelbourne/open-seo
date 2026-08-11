@@ -5,6 +5,7 @@ import {
   Globe,
   LayoutDashboard,
   Link2,
+  MapPin,
   MessageSquare,
   Search,
   Sparkles,
@@ -36,6 +37,16 @@ const projectNavItems = [
     to: "/p/$projectId/rank-tracking" as const,
     label: "Rank Tracking",
     icon: TrendingUp,
+  },
+  {
+    to: "/p/$projectId/local-rank" as const,
+    label: "Maps Grid Rank",
+    icon: MapPin,
+  },
+  {
+    to: "/p/$projectId/local-presence" as const,
+    label: "Local Presence",
+    icon: MapPin,
   },
   {
     to: "/p/$projectId/search-performance" as const,
@@ -118,6 +129,8 @@ export function getProjectNavGroups(projectId: string) {
       items: [
         byPath("/p/$projectId/search-performance"),
         byPath("/p/$projectId/rank-tracking"),
+        byPath("/p/$projectId/local-rank"),
+        byPath("/p/$projectId/local-presence"),
         byPath("/p/$projectId/saved"),
         byPath("/p/$projectId/audit"),
       ],

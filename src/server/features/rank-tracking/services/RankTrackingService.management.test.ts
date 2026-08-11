@@ -33,6 +33,9 @@ vi.mock("@/server/lib/dataforseo", () => ({
   createDataforseoClient: mocks.createDataforseoClient,
   fetchKeywordMetricsForList: mocks.fetchKeywordMetricsForList,
 }));
+vi.mock("@/server/features/usage/services/UsageService", () => ({
+  assertUsageBudgetForEstimate: vi.fn().mockResolvedValue(undefined),
+}));
 
 const config = {
   id: "config_1",

@@ -3,6 +3,7 @@ import {
   SerpApiStopCrawlOnMatchInfo,
   SerpGoogleLocalFinderLiveAdvancedRequestInfo,
   SerpGoogleMapsLiveAdvancedRequestInfo,
+  SerpGoogleMapsTaskPostRequestInfo,
   SerpGoogleOrganicLiveAdvancedRequestInfo,
   SerpGoogleOrganicTaskPostRequestInfo,
 } from "dataforseo-client";
@@ -16,6 +17,8 @@ import {
   type DataforseoApiResponse,
 } from "@/server/lib/dataforseo/envelope";
 import { AppError } from "@/server/lib/errors";
+import { matchMapsResultRank } from "@/shared/local-map-rank";
+import { formatLocationCoordinate } from "@/shared/grid-pins";
 
 /** DataForSEO bills SERPs in pages of 10; depth outside 10-100 is rejected. */
 function clampSerpDepth(depth: number): number {
@@ -385,5 +388,223 @@ export async function fetchLocalSerp(input: {
   return {
     data: task.result?.[0]?.items ?? [],
     billing: buildTaskBilling(task),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Maps grid rank — queued task_post + task_get (scheduled) and live advanced.
+// ---------------------------------------------------------------------------
+
+const mapsSnapshotItemSchema = z
+  .object({
+    type: z.string(),
+    rank_group: z.number().nullable().optional(),
+    rank_absolute: z.number().nullable().optional(),
+    place_id: z.string().nullable().optional(),
+    cid: z.string().nullable().optional(),
+    title: z.string().nullable().optional(),
+  })
+  .passthrough();
+
+export interface MapsRankTaskInput {
+  keyword: string;
+  keywordId: string;
+  pinIndex: number;
+  latitude: number;
+  longitude: number;
+}
+
+export interface PostedMapsRankTask extends MapsRankTaskInput {
+  taskId: string;
+}
+
+export interface MapsRankCheckResult {
+  keywordId: string;
+  pinIndex: number;
+  latitude: number;
+  longitude: number;
+  rankAbsolute: number | null;
+  matchedTitle: string | null;
+  items: Record<string, unknown>[];
+}
+
+function buildMapsRankResult(
+  input: MapsRankTaskInput,
+  items: Record<string, unknown>[],
+  target: { placeId?: string | null; cid?: string | null },
+): MapsRankCheckResult {
+  const match = matchMapsResultRank(items, target);
+  return {
+    keywordId: input.keywordId,
+    pinIndex: input.pinIndex,
+    latitude: input.latitude,
+    longitude: input.longitude,
+    rankAbsolute: match.rankAbsolute,
+    matchedTitle: match.matchedTitle,
+    items,
+  };
+}
+
+export async function postMapsRankTasks(input: {
+  tasks: MapsRankTaskInput[];
+  languageCode: string;
+  device: "desktop" | "mobile";
+  depth: number;
+}): Promise<DataforseoApiResponse<PostedMapsRankTask[]>> {
+  if (input.tasks.length === 0 || input.tasks.length > MAX_TASKS_PER_POST) {
+    throw new AppError(
+      "INTERNAL_ERROR",
+      `task_post accepts 1-${MAX_TASKS_PER_POST} tasks, got ${input.tasks.length}`,
+    );
+  }
+  const depth = clampSerpDepth(input.depth);
+  const os = input.device === "desktop" ? "windows" : "android";
+
+  const response = await serpApi().googleMapsTaskPost(
+    input.tasks.map(
+      (task) =>
+        new SerpGoogleMapsTaskPostRequestInfo({
+          keyword: task.keyword,
+          location_coordinate: formatLocationCoordinate(
+            task.latitude,
+            task.longitude,
+          ),
+          language_code: input.languageCode,
+          device: input.device,
+          os,
+          depth,
+          tag: `${task.keywordId}:${task.pinIndex}`,
+        }),
+    ),
+  );
+
+  if (!response || response.status_code !== 20000) {
+    throw new AppError(
+      "INTERNAL_ERROR",
+      response?.status_message || "DataForSEO Maps task_post failed",
+    );
+  }
+
+  const byTag = new Map(
+    input.tasks.map((task) => [`${task.keywordId}:${task.pinIndex}`, task]),
+  );
+  const posted: PostedMapsRankTask[] = [];
+  let costUsd = 0;
+  for (const entry of response.tasks ?? []) {
+    costUsd += entry.cost ?? 0;
+    const tag: unknown = entry.data?.tag;
+    const task = typeof tag === "string" ? byTag.get(tag) : undefined;
+    if (entry.status_code !== 20100 || !entry.id || !task) {
+      console.warn(
+        `dataforseo.maps.task_post.rejected-entry (${entry.status_code}): ${entry.status_message}`,
+      );
+      continue;
+    }
+    posted.push({ ...task, taskId: entry.id });
+  }
+
+  return {
+    data: posted,
+    billing: {
+      path: ["v3", "serp", "google", "maps", "task_post"],
+      costUsd,
+    },
+  };
+}
+
+type MapsRankTaskOutcome =
+  | { status: "pending" }
+  | { status: "failed"; message: string }
+  | { status: "completed"; result: MapsRankCheckResult };
+
+export async function fetchMapsTaskResult(input: {
+  taskId: string;
+  task: MapsRankTaskInput;
+  targetPlaceId?: string | null;
+  targetCid?: string | null;
+}): Promise<MapsRankTaskOutcome> {
+  const response = await serpApi().googleMapsTaskGetAdvanced(input.taskId);
+  const task = response?.tasks?.[0];
+  if (!response || response.status_code !== 20000 || !task) {
+    throw new AppError(
+      "INTERNAL_ERROR",
+      response?.status_message || "DataForSEO Maps task_get failed",
+    );
+  }
+
+  if (
+    task.status_code !== undefined &&
+    TASK_IN_PROGRESS_STATUS_CODES.has(task.status_code)
+  ) {
+    return { status: "pending" };
+  }
+
+  if (task.status_code !== 20000) {
+    if (!isNoResultsTask(task)) {
+      return {
+        status: "failed",
+        message:
+          task.status_message || `DataForSEO task failed (${task.status_code})`,
+      };
+    }
+    return {
+      status: "completed",
+      result: buildMapsRankResult(input.task, [], {
+        placeId: input.targetPlaceId,
+        cid: input.targetCid,
+      }),
+    };
+  }
+
+  const items = parseTaskItems(
+    "google-maps-task-get-advanced",
+    task,
+    mapsSnapshotItemSchema,
+  );
+  return {
+    status: "completed",
+    result: buildMapsRankResult(input.task, items, {
+      placeId: input.targetPlaceId,
+      cid: input.targetCid,
+    }),
+  };
+}
+
+export async function fetchMapsRankLive(input: {
+  keyword: string;
+  keywordId: string;
+  pinIndex: number;
+  latitude: number;
+  longitude: number;
+  languageCode: string;
+  device: "desktop" | "mobile";
+  depth: number;
+  targetPlaceId?: string | null;
+  targetCid?: string | null;
+}): Promise<DataforseoApiResponse<MapsRankCheckResult>> {
+  const items = await fetchLocalSerp({
+    keyword: input.keyword,
+    locationCoordinate: formatLocationCoordinate(
+      input.latitude,
+      input.longitude,
+    ),
+    languageCode: input.languageCode,
+    searchType: "maps",
+    device: input.device,
+    depth: input.depth,
+  });
+  const taskInput: MapsRankTaskInput = {
+    keyword: input.keyword,
+    keywordId: input.keywordId,
+    pinIndex: input.pinIndex,
+    latitude: input.latitude,
+    longitude: input.longitude,
+  };
+  return {
+    data: buildMapsRankResult(taskInput, items.data, {
+      placeId: input.targetPlaceId,
+      cid: input.targetCid,
+    }),
+    billing: items.billing,
   };
 }

@@ -50,8 +50,12 @@ import { Route as ProjectPProjectIdBrandLookupRouteImport } from './routes/_proj
 import { Route as ProjectPProjectIdBacklinksRouteImport } from './routes/_project/p/$projectId/backlinks'
 import { Route as ProjectPProjectIdAuditRouteImport } from './routes/_project/p/$projectId/audit'
 import { Route as ProjectPProjectIdRankTrackingIndexRouteImport } from './routes/_project/p/$projectId/rank-tracking/index'
+import { Route as ProjectPProjectIdLocalRankIndexRouteImport } from './routes/_project/p/$projectId/local-rank/index'
+import { Route as ProjectPProjectIdLocalPresenceIndexRouteImport } from './routes/_project/p/$projectId/local-presence/index'
 import { Route as ProjectPProjectIdAuditIndexRouteImport } from './routes/_project/p/$projectId/audit/index'
+import { Route as ProjectPProjectIdReportsPrintRouteImport } from './routes/_project/p/$projectId/reports/print'
 import { Route as ProjectPProjectIdRankTrackingConfigIdRouteImport } from './routes/_project/p/$projectId/rank-tracking/$configId'
+import { Route as ProjectPProjectIdLocalPresenceAiVisibilityIndexRouteImport } from './routes/_project/p/$projectId/local-presence/ai-visibility/index'
 import { Route as ProjectPProjectIdAuditIssuesResultIdRouteImport } from './routes/_project/p/$projectId/audit/issues/$resultId'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
@@ -267,17 +271,41 @@ const ProjectPProjectIdRankTrackingIndexRoute =
     path: '/',
     getParentRoute: () => ProjectPProjectIdRankTrackingRoute,
   } as any)
+const ProjectPProjectIdLocalRankIndexRoute =
+  ProjectPProjectIdLocalRankIndexRouteImport.update({
+    id: '/local-rank/',
+    path: '/local-rank/',
+    getParentRoute: () => ProjectPProjectIdRouteRoute,
+  } as any)
+const ProjectPProjectIdLocalPresenceIndexRoute =
+  ProjectPProjectIdLocalPresenceIndexRouteImport.update({
+    id: '/local-presence/',
+    path: '/local-presence/',
+    getParentRoute: () => ProjectPProjectIdRouteRoute,
+  } as any)
 const ProjectPProjectIdAuditIndexRoute =
   ProjectPProjectIdAuditIndexRouteImport.update({
     id: '/',
     path: '/',
     getParentRoute: () => ProjectPProjectIdAuditRoute,
   } as any)
+const ProjectPProjectIdReportsPrintRoute =
+  ProjectPProjectIdReportsPrintRouteImport.update({
+    id: '/reports/print',
+    path: '/reports/print',
+    getParentRoute: () => ProjectPProjectIdRouteRoute,
+  } as any)
 const ProjectPProjectIdRankTrackingConfigIdRoute =
   ProjectPProjectIdRankTrackingConfigIdRouteImport.update({
     id: '/$configId',
     path: '/$configId',
     getParentRoute: () => ProjectPProjectIdRankTrackingRoute,
+  } as any)
+const ProjectPProjectIdLocalPresenceAiVisibilityIndexRoute =
+  ProjectPProjectIdLocalPresenceAiVisibilityIndexRouteImport.update({
+    id: '/local-presence/ai-visibility/',
+    path: '/local-presence/ai-visibility/',
+    getParentRoute: () => ProjectPProjectIdRouteRoute,
   } as any)
 const ProjectPProjectIdAuditIssuesResultIdRoute =
   ProjectPProjectIdAuditIssuesResultIdRouteImport.update({
@@ -324,9 +352,13 @@ export interface FileRoutesByFullPath {
   '/api/gsc/oauth/callback': typeof ApiGscOauthCallbackRoute
   '/p/$projectId/': typeof ProjectPProjectIdIndexRoute
   '/p/$projectId/rank-tracking/$configId': typeof ProjectPProjectIdRankTrackingConfigIdRoute
+  '/p/$projectId/reports/print': typeof ProjectPProjectIdReportsPrintRoute
   '/p/$projectId/audit/': typeof ProjectPProjectIdAuditIndexRoute
+  '/p/$projectId/local-presence/': typeof ProjectPProjectIdLocalPresenceIndexRoute
+  '/p/$projectId/local-rank/': typeof ProjectPProjectIdLocalRankIndexRoute
   '/p/$projectId/rank-tracking/': typeof ProjectPProjectIdRankTrackingIndexRoute
   '/p/$projectId/audit/issues/$resultId': typeof ProjectPProjectIdAuditIssuesResultIdRoute
+  '/p/$projectId/local-presence/ai-visibility/': typeof ProjectPProjectIdLocalPresenceAiVisibilityIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
@@ -363,9 +395,13 @@ export interface FileRoutesByTo {
   '/api/gsc/oauth/callback': typeof ApiGscOauthCallbackRoute
   '/p/$projectId': typeof ProjectPProjectIdIndexRoute
   '/p/$projectId/rank-tracking/$configId': typeof ProjectPProjectIdRankTrackingConfigIdRoute
+  '/p/$projectId/reports/print': typeof ProjectPProjectIdReportsPrintRoute
   '/p/$projectId/audit': typeof ProjectPProjectIdAuditIndexRoute
+  '/p/$projectId/local-presence': typeof ProjectPProjectIdLocalPresenceIndexRoute
+  '/p/$projectId/local-rank': typeof ProjectPProjectIdLocalRankIndexRoute
   '/p/$projectId/rank-tracking': typeof ProjectPProjectIdRankTrackingIndexRoute
   '/p/$projectId/audit/issues/$resultId': typeof ProjectPProjectIdAuditIssuesResultIdRoute
+  '/p/$projectId/local-presence/ai-visibility': typeof ProjectPProjectIdLocalPresenceAiVisibilityIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -410,9 +446,13 @@ export interface FileRoutesById {
   '/api/gsc/oauth/callback': typeof ApiGscOauthCallbackRoute
   '/_project/p/$projectId/': typeof ProjectPProjectIdIndexRoute
   '/_project/p/$projectId/rank-tracking/$configId': typeof ProjectPProjectIdRankTrackingConfigIdRoute
+  '/_project/p/$projectId/reports/print': typeof ProjectPProjectIdReportsPrintRoute
   '/_project/p/$projectId/audit/': typeof ProjectPProjectIdAuditIndexRoute
+  '/_project/p/$projectId/local-presence/': typeof ProjectPProjectIdLocalPresenceIndexRoute
+  '/_project/p/$projectId/local-rank/': typeof ProjectPProjectIdLocalRankIndexRoute
   '/_project/p/$projectId/rank-tracking/': typeof ProjectPProjectIdRankTrackingIndexRoute
   '/_project/p/$projectId/audit/issues/$resultId': typeof ProjectPProjectIdAuditIssuesResultIdRoute
+  '/_project/p/$projectId/local-presence/ai-visibility/': typeof ProjectPProjectIdLocalPresenceAiVisibilityIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -454,9 +494,13 @@ export interface FileRouteTypes {
     | '/api/gsc/oauth/callback'
     | '/p/$projectId/'
     | '/p/$projectId/rank-tracking/$configId'
+    | '/p/$projectId/reports/print'
     | '/p/$projectId/audit/'
+    | '/p/$projectId/local-presence/'
+    | '/p/$projectId/local-rank/'
     | '/p/$projectId/rank-tracking/'
     | '/p/$projectId/audit/issues/$resultId'
+    | '/p/$projectId/local-presence/ai-visibility/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -493,9 +537,13 @@ export interface FileRouteTypes {
     | '/api/gsc/oauth/callback'
     | '/p/$projectId'
     | '/p/$projectId/rank-tracking/$configId'
+    | '/p/$projectId/reports/print'
     | '/p/$projectId/audit'
+    | '/p/$projectId/local-presence'
+    | '/p/$projectId/local-rank'
     | '/p/$projectId/rank-tracking'
     | '/p/$projectId/audit/issues/$resultId'
+    | '/p/$projectId/local-presence/ai-visibility'
   id:
     | '__root__'
     | '/_app'
@@ -539,9 +587,13 @@ export interface FileRouteTypes {
     | '/api/gsc/oauth/callback'
     | '/_project/p/$projectId/'
     | '/_project/p/$projectId/rank-tracking/$configId'
+    | '/_project/p/$projectId/reports/print'
     | '/_project/p/$projectId/audit/'
+    | '/_project/p/$projectId/local-presence/'
+    | '/_project/p/$projectId/local-rank/'
     | '/_project/p/$projectId/rank-tracking/'
     | '/_project/p/$projectId/audit/issues/$resultId'
+    | '/_project/p/$projectId/local-presence/ai-visibility/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -849,6 +901,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectPProjectIdRankTrackingIndexRouteImport
       parentRoute: typeof ProjectPProjectIdRankTrackingRoute
     }
+    '/_project/p/$projectId/local-rank/': {
+      id: '/_project/p/$projectId/local-rank/'
+      path: '/local-rank'
+      fullPath: '/p/$projectId/local-rank/'
+      preLoaderRoute: typeof ProjectPProjectIdLocalRankIndexRouteImport
+      parentRoute: typeof ProjectPProjectIdRouteRoute
+    }
+    '/_project/p/$projectId/local-presence/': {
+      id: '/_project/p/$projectId/local-presence/'
+      path: '/local-presence'
+      fullPath: '/p/$projectId/local-presence/'
+      preLoaderRoute: typeof ProjectPProjectIdLocalPresenceIndexRouteImport
+      parentRoute: typeof ProjectPProjectIdRouteRoute
+    }
     '/_project/p/$projectId/audit/': {
       id: '/_project/p/$projectId/audit/'
       path: '/'
@@ -856,12 +922,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectPProjectIdAuditIndexRouteImport
       parentRoute: typeof ProjectPProjectIdAuditRoute
     }
+    '/_project/p/$projectId/reports/print': {
+      id: '/_project/p/$projectId/reports/print'
+      path: '/reports/print'
+      fullPath: '/p/$projectId/reports/print'
+      preLoaderRoute: typeof ProjectPProjectIdReportsPrintRouteImport
+      parentRoute: typeof ProjectPProjectIdRouteRoute
+    }
     '/_project/p/$projectId/rank-tracking/$configId': {
       id: '/_project/p/$projectId/rank-tracking/$configId'
       path: '/$configId'
       fullPath: '/p/$projectId/rank-tracking/$configId'
       preLoaderRoute: typeof ProjectPProjectIdRankTrackingConfigIdRouteImport
       parentRoute: typeof ProjectPProjectIdRankTrackingRoute
+    }
+    '/_project/p/$projectId/local-presence/ai-visibility/': {
+      id: '/_project/p/$projectId/local-presence/ai-visibility/'
+      path: '/local-presence/ai-visibility'
+      fullPath: '/p/$projectId/local-presence/ai-visibility/'
+      preLoaderRoute: typeof ProjectPProjectIdLocalPresenceAiVisibilityIndexRouteImport
+      parentRoute: typeof ProjectPProjectIdRouteRoute
     }
     '/_project/p/$projectId/audit/issues/$resultId': {
       id: '/_project/p/$projectId/audit/issues/$resultId'
@@ -947,6 +1027,10 @@ interface ProjectPProjectIdRouteRouteChildren {
   ProjectPProjectIdSearchPerformanceRoute: typeof ProjectPProjectIdSearchPerformanceRoute
   ProjectPProjectIdSettingsRoute: typeof ProjectPProjectIdSettingsRoute
   ProjectPProjectIdIndexRoute: typeof ProjectPProjectIdIndexRoute
+  ProjectPProjectIdReportsPrintRoute: typeof ProjectPProjectIdReportsPrintRoute
+  ProjectPProjectIdLocalPresenceIndexRoute: typeof ProjectPProjectIdLocalPresenceIndexRoute
+  ProjectPProjectIdLocalRankIndexRoute: typeof ProjectPProjectIdLocalRankIndexRoute
+  ProjectPProjectIdLocalPresenceAiVisibilityIndexRoute: typeof ProjectPProjectIdLocalPresenceAiVisibilityIndexRoute
 }
 
 const ProjectPProjectIdRouteRouteChildren: ProjectPProjectIdRouteRouteChildren =
@@ -965,6 +1049,12 @@ const ProjectPProjectIdRouteRouteChildren: ProjectPProjectIdRouteRouteChildren =
       ProjectPProjectIdSearchPerformanceRoute,
     ProjectPProjectIdSettingsRoute: ProjectPProjectIdSettingsRoute,
     ProjectPProjectIdIndexRoute: ProjectPProjectIdIndexRoute,
+    ProjectPProjectIdReportsPrintRoute: ProjectPProjectIdReportsPrintRoute,
+    ProjectPProjectIdLocalPresenceIndexRoute:
+      ProjectPProjectIdLocalPresenceIndexRoute,
+    ProjectPProjectIdLocalRankIndexRoute: ProjectPProjectIdLocalRankIndexRoute,
+    ProjectPProjectIdLocalPresenceAiVisibilityIndexRoute:
+      ProjectPProjectIdLocalPresenceAiVisibilityIndexRoute,
   }
 
 const ProjectPProjectIdRouteRouteWithChildren =

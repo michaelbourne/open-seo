@@ -7,6 +7,8 @@ import { resolveUserContextFromHeaders } from "@/middleware/ensure-user/resolve"
 import { ProjectRepository } from "@/server/features/projects/repositories/ProjectRepository";
 import { SamSessionRepository } from "@/server/features/sam/SamSessionRepository";
 import { runScheduledRankChecks } from "@/server/features/rank-tracking/services/scheduledRankChecks";
+import { runScheduledLocalMapScans } from "@/server/features/local-map-rank/services/scheduledLocalMapScans";
+import { runScheduledLocalAiScans } from "@/server/features/local-ai-monitor/services/scheduledLocalAiScans";
 import { reconcileStaleAudits } from "@/server/features/audit/services/auditReconciler";
 import { getOrCreateOrganizationCustomer } from "@/server/billing/subscription";
 import { isHostedServerAuthMode } from "@/server/lib/runtime-env";
@@ -180,6 +182,7 @@ function handleFetch(
 // Export Workflow classes as named exports
 export { SiteAuditWorkflow } from "./server/workflows/SiteAuditWorkflow";
 export { RankCheckWorkflow } from "./server/workflows/RankCheckWorkflow";
+export { LocalMapRankWorkflow } from "./server/workflows/LocalMapRankWorkflow";
 // Durable Object class for the onboarding strategy chat (Agents SDK).
 export { OnboardingChatAgent } from "./server/features/onboarding/OnboardingChatAgent";
 // Durable Object class for the SAM in-app agent (Agents SDK).
@@ -226,7 +229,11 @@ export default {
       console.error("[cron] Stale-audit reconcile failed:", err);
     }
     // Scope a per-request Postgres client for the cron run (no-op in D1 mode).
-    await withPgClient(() => runScheduledRankChecks(env));
+    await withPgClient(async () => {
+      await runScheduledRankChecks(env);
+      await runScheduledLocalMapScans(env);
+      await runScheduledLocalAiScans(env);
+    });
     if (watchdogError) throw watchdogError;
   },
 };

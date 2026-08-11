@@ -27,6 +27,7 @@ import {
   getEnvValueSync,
   isHostedServerAuthMode,
 } from "@/server/lib/runtime-env";
+import { assertAgentDailyBudget } from "@/server/features/usage/services/UsageService";
 import {
   checkUsageCreditsDepleted,
   trackUsageCreditSpend,
@@ -258,6 +259,14 @@ export class SamChatAgent extends Think {
           );
         }
         this.turnMonthlyRemaining = monthlyRemaining;
+      } else {
+        try {
+          await assertAgentDailyBudget(organizationId);
+        } catch {
+          return this.refusalTurn(
+            "Daily SAM agent budget reached. Raise the cap in Settings or try again tomorrow.",
+          );
+        }
       }
 
       const baseUrl =

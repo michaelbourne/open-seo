@@ -59,3 +59,10 @@ export const requireProjectContext = [
     });
   }),
 ] as const;
+
+export const requireOrganizationContext = [
+  createMiddleware({ type: "function" }).server(async ({ next, context }) => {
+    const authenticatedContext = getAuthenticatedContext(context);
+    return next({ context: authenticatedContext });
+  }),
+] as const;

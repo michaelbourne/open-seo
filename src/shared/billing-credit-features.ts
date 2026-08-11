@@ -7,6 +7,8 @@ export type CreditFeature =
   | "ai_citations"
   | "ai_prompt_responses"
   | "local_seo"
+  | "local_map_rank"
+  | "ai_search"
   | "onboarding"
   | "agent";
 
@@ -18,8 +20,9 @@ const CREDIT_FEATURE_LABELS: Record<string, string> = {
   rank_tracking: "Rank Tracking",
   ai_citations: "AI Citations",
   ai_prompt_responses: "AI Prompt Responses",
-  ai_search: "AI Search",
+  ai_search: "AI Search & Visibility",
   local_seo: "Local SEO",
+  local_map_rank: "Maps Grid Rank",
   onboarding: "Onboarding",
   agent: "SAM Agent",
 };

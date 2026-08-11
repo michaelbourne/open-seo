@@ -8,7 +8,12 @@
 
 export {
   fetchBusinessListingsSearch,
+  fetchExtendedReviewsTaskResult,
+  fetchGoogleReviewsTaskResult,
+  fetchMyBusinessInfoLive,
   fetchQuestionsAnswers,
+  postExtendedReviewsTasks,
+  postGoogleReviewsTasks,
 } from "@/server/lib/dataforseo/business";
 
 export {
@@ -38,8 +43,11 @@ export {
 export {
   fetchLiveSerp,
   fetchLocalSerp,
+  fetchMapsRankLive,
+  fetchMapsTaskResult,
   fetchRankCheckSerp,
   fetchRankCheckTaskResult,
+  postMapsRankTasks,
   postRankCheckTasks,
 } from "@/server/lib/dataforseo/serp";
 

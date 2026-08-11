@@ -24,6 +24,11 @@ const { checkMock, trackMock, getOrCreateMock, isHostedServerAuthModeMock } =
 
 vi.mock("cloudflare:workers", () => ({
   waitUntil: vi.fn(),
+  env: { DB: {} },
+}));
+
+vi.mock("@/server/features/usage/services/UsageService", () => ({
+  recordSelfHostedUsage: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("@/server/billing/autumn", () => ({
@@ -139,7 +144,9 @@ describe("meterDataforseoCall with split balances", () => {
     vi.clearAllMocks();
   });
 
-  it("skips billing in non-hosted mode", async () => {
+  // Lazy-loads the DataForSEO SDK on first call; under full-suite load that
+  // can exceed the default 5s timeout even though the assertion itself is cheap.
+  it("skips billing in non-hosted mode", { timeout: 15_000 }, async () => {
     isHostedServerAuthModeMock.mockResolvedValue(false);
     mockDataforseoResult(0.05);
 

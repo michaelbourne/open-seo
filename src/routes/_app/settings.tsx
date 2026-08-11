@@ -3,6 +3,7 @@ import { Monitor, Moon, Sun } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { type ThemePreference, useThemePreference } from "@/client/lib/theme";
+import { AgencySettingsPanels } from "@/client/features/settings/AgencySettingsPanels";
 import { authClient, useSession } from "@/lib/auth-client";
 import { isHostedClientAuthMode } from "@/lib/auth-mode";
 import { version } from "../../../package.json";
@@ -114,8 +115,10 @@ function SettingsPage() {
             </div>
           </section>
         ) : (
-          <section className="space-y-3">
-            <h2 className="text-sm font-medium text-base-content/50">About</h2>
+          <>
+            <AgencySettingsPanels />
+            <section className="space-y-3">
+              <h2 className="text-sm font-medium text-base-content/50">About</h2>
             <div className="flex items-center justify-between gap-6">
               <span className="text-sm">Version</span>
               <span className="font-mono text-sm text-base-content/60">
@@ -123,6 +126,7 @@ function SettingsPage() {
               </span>
             </div>
           </section>
+          </>
         )}
       </div>
     </div>

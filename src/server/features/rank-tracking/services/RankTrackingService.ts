@@ -8,6 +8,7 @@ import {
   fetchKeywordMetricsForList,
 } from "@/server/lib/dataforseo";
 import { RankTrackingRepository } from "@/server/features/rank-tracking/repositories/RankTrackingRepository";
+import { assertUsageBudgetForEstimate } from "@/server/features/usage/services/UsageService";
 import { AppError } from "@/server/lib/errors";
 import { isHostedServerAuthMode } from "@/server/lib/runtime-env";
 import type {
@@ -195,20 +196,25 @@ async function triggerCheck(input: {
     );
   }
 
-  if (input.maxCostCredits != null) {
-    const { costCredits } = estimateRankCheckCredits(
-      keywords.length,
-      config.devices,
-      config.serpDepth,
-      "live",
+  const keywordCount = input.keywordIds?.length ?? keywords.length;
+  const { costCredits, costUsd } = estimateRankCheckCredits(
+    keywordCount,
+    config.devices,
+    config.serpDepth,
+    "live",
+  );
+
+  if (input.maxCostCredits != null && costCredits > input.maxCostCredits) {
+    throw new AppError(
+      "VALIDATION_ERROR",
+      rankCheckCostApprovalError(costCredits, input.maxCostCredits),
     );
-    if (costCredits > input.maxCostCredits) {
-      throw new AppError(
-        "VALIDATION_ERROR",
-        rankCheckCostApprovalError(costCredits, input.maxCostCredits),
-      );
-    }
   }
+
+  await assertUsageBudgetForEstimate({
+    organizationId: input.billingCustomer.organizationId,
+    estimatedCostUsd: costUsd,
+  });
 
   return beginRankCheckRun({
     workflow: env.RANK_CHECK_WORKFLOW,
