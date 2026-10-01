@@ -12,6 +12,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { AutumnProvider } from "autumn-js/react";
 import * as React from "react";
 import { DefaultCatchBoundary } from "@/client/components/DefaultCatchBoundary";
+import { captureGoogleLinkError } from "@/client/features/integrations/googleLinkError";
 import { ExportToSheetsModal } from "@/client/components/table/ExportToSheetsModal";
 import { themePreferenceInitScript } from "@/client/lib/theme";
 import {
@@ -21,12 +22,17 @@ import {
   stopAnalyticsCapture,
 } from "@/client/lib/posthog";
 import { NotFound } from "@/client/components/NotFound";
+import { TooltipProvider } from "@/client/components/ui/tooltip";
 import appCss from "@/client/styles/app.css?url";
 import { useSession } from "@/lib/auth-client";
 import { isHostedClientAuthMode } from "@/lib/auth-mode";
 import { Toaster } from "sonner";
 import { queryClient } from "@/client/tanstack-db";
 import { getActiveOrganizationId } from "@/lib/auth-session";
+
+// Capture Google link error params before the router starts — a route loader
+// redirect would otherwise replace the URL and lose them. See googleLinkError.ts.
+captureGoogleLinkError();
 
 export const Route = createRootRoute({
   head: () => ({
@@ -142,7 +148,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               context — nothing fetches until a useCustomer consumer mounts. */}
           <AutumnProvider>
             <QueryClientProvider client={queryClient}>
-              <>
+              <TooltipProvider>
                 <PostHogBootstrap />
                 {children}
                 <ExportToSheetsModal />
@@ -163,7 +169,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                     ]}
                   />
                 ) : null}
-              </>
+              </TooltipProvider>
             </QueryClientProvider>
           </AutumnProvider>
         </ClientOnly>

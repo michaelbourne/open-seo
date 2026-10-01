@@ -27,6 +27,7 @@ import { normalizeClientRegistrationRequest } from "@/server/mcp/oauth-registrat
 import { getPublicOrigin } from "@/server/mcp/public-origin";
 import { handleAuthenticatedOpenSeoMcpRequest } from "@/server/mcp/transport";
 import { resolveHostedContext } from "@/middleware/ensure-user/hosted";
+import { handleMcpApiKeyRequest } from "@/server/mcp/api-key-auth";
 
 const OAUTH_AUTHORIZE_PATH = "/api/auth/oauth2/authorize";
 const OAUTH_TOKEN_PATH = "/api/auth/oauth2/token";
@@ -332,6 +333,9 @@ async function handleOAuthConsentResponse(
     );
   }
 
+  // organizationId is only the fallback context for tools with no project
+  // argument; the hosted transport re-resolves it and stamps orgScope per
+  // request, so one authorization follows the user across every organization.
   const props = createWorkersOAuthMcpProps({
     userId: context.userId,
     userEmail: context.userEmail,
@@ -445,6 +449,9 @@ export function createOpenSeoOAuthProvider(appFetch: AppFetch) {
   return {
     async fetch(request: Request, env: OpenSeoOAuthEnv, ctx: ExecutionContext) {
       const url = new URL(request.url);
+
+      const apiKeyResponse = await handleMcpApiKeyRequest(request, env, ctx);
+      if (apiKeyResponse) return apiKeyResponse;
 
       if (url.pathname === OAUTH_REGISTER_PATH) {
         return getProvider().fetch(

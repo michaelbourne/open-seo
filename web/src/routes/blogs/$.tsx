@@ -7,7 +7,7 @@ import { BlogLayout } from "@/components/blog-layout";
 import type { ComponentPropsWithoutRef } from "react";
 import { Suspense } from "react";
 import { getBlogPost } from "@/lib/content.functions";
-import { blog } from "../../../source.generated";
+import { blog } from "../../../.source/index";
 import { buildPageSeo } from "@/lib/seo";
 
 export const Route = createFileRoute("/blogs/$")({
@@ -91,16 +91,18 @@ function BlogPost() {
 
   return (
     <BlogLayout>
-      <article className="mx-auto max-w-3xl px-6 py-12 text-neutral-950 md:py-24">
+      <article className="fd-light mx-auto max-w-3xl px-6 py-12 text-neutral-950 md:py-24">
         <BlogHeader title={data.title} description={data.description} />
         <Suspense>
           <Content />
         </Suspense>
+      </article>
 
-        <div className="mt-16 border-t border-[var(--color-border-subtle)] pt-8">
+      <div className="mx-auto max-w-5xl px-6 pb-12">
+        <div className="border-t border-[var(--color-border-subtle)] pt-8">
           <SiteFooter className="text-xs text-neutral-600 [&_a]:transition-colors [&_a]:hover:text-neutral-900" />
         </div>
-      </article>
+      </div>
     </BlogLayout>
   );
 }

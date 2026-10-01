@@ -41,7 +41,7 @@ export function getOAuthSignedQuery(search: string | null | undefined) {
   return signedParams.toString();
 }
 
-export function getOAuthAuthorizeRedirectFromSearch(
+function getOAuthAuthorizeRedirectFromSearch(
   search: string | null | undefined,
 ) {
   const signedQuery = getOAuthSignedQuery(search);
@@ -71,6 +71,28 @@ export function getCurrentAuthRedirect(
 export function getCurrentAuthRedirectFromHref(href: string) {
   const url = new URL(href, "https://openseo.local");
   return normalizeAuthRedirect(`${url.pathname}${url.search}${url.hash}`);
+}
+
+/**
+ * Routes served as a raw document by a server handler, with no client
+ * component. They are still matchable in the generated client route tree, where
+ * a route with no component renders an empty shell — so an SPA navigation to
+ * one lands the user on a blank page. Navigate to these with a document load.
+ */
+export function isDocumentRoute(redirectTo: string) {
+  // Both member reports and public shares are served by document handlers.
+  return redirectTo.startsWith("/r/") || redirectTo.startsWith("/s/");
+}
+
+/**
+ * Better Auth only accepts a relative callbackURL made of a narrow character
+ * set, so a redirect like an MCP authorize URL (`redirect_uri=http://...`) or
+ * one with a `#hash` fails as "Invalid callbackURL". An absolute same-origin
+ * URL is checked against trustedOrigins by origin alone. Reads `window`, so
+ * call it from event handlers, not during render.
+ */
+export function toAuthCallbackURL(redirectTo: string) {
+  return new URL(redirectTo, window.location.origin).toString();
 }
 
 export function getSignInSearch(redirectTo: string) {

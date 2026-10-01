@@ -1,18 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
-
-const mocks = vi.hoisted(() => ({
-  props: {} as Record<string, unknown>,
-}));
-
-vi.mock("agents/mcp/server", () => ({
-  getMcpAuthContext: () => ({ props: mocks.props }),
-}));
+import { describe, expect, it } from "vitest";
 
 import {
   createMcpToolContext,
   createWorkersOAuthMcpProps,
-  MCP_AUTH_CONTEXT_PROP,
-  workersOAuthMcpPropsSchema,
 } from "@/server/mcp/context";
 
 const applicationContext = {
@@ -23,35 +13,26 @@ const applicationContext = {
 };
 
 describe("OpenSEO tool auth context", () => {
-  it("stores only application-specific identity in Workers OAuth props", () => {
-    const props = createWorkersOAuthMcpProps(applicationContext);
-
-    expect(workersOAuthMcpPropsSchema.parse(props)).toEqual({
-      [MCP_AUTH_CONTEXT_PROP]: applicationContext,
-    });
-  });
-
-  it("rejects unrecognized provider props", () => {
-    expect(workersOAuthMcpPropsSchema.safeParse({}).success).toBe(false);
-  });
-
   it("prefers standard OAuth client metadata over the props fallback", () => {
-    mocks.props = createWorkersOAuthMcpProps({
+    const props = createWorkersOAuthMcpProps({
       ...applicationContext,
       clientId: "stale-client",
       scopes: ["offline_access"],
     });
 
     expect(
-      createMcpToolContext({
-        http: {
-          authInfo: {
-            token: "access-token",
-            clientId: "client-1",
-            scopes: ["mcp"],
+      createMcpToolContext(
+        {
+          http: {
+            authInfo: {
+              token: "access-token",
+              clientId: "client-1",
+              scopes: ["mcp"],
+            },
           },
         },
-      }).auth,
+        props,
+      ).auth,
     ).toMatchObject({
       ...applicationContext,
       clientId: "client-1",
@@ -59,16 +40,16 @@ describe("OpenSEO tool auth context", () => {
     });
   });
 
-  it("falls back to encrypted props with workers-oauth-provider 0.10", () => {
-    mocks.props = createWorkersOAuthMcpProps({
+  it("reads clientId and scopes from props when authInfo is absent", () => {
+    const props = createWorkersOAuthMcpProps({
       ...applicationContext,
-      clientId: "client-1",
+      clientId: "legacy-client",
       scopes: ["mcp"],
     });
 
-    expect(createMcpToolContext({}).auth).toMatchObject({
+    expect(createMcpToolContext({}, props).auth).toMatchObject({
       ...applicationContext,
-      clientId: "client-1",
+      clientId: "legacy-client",
       scopes: ["mcp"],
     });
   });

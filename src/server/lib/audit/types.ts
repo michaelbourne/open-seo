@@ -3,6 +3,7 @@
  */
 
 import { z } from "zod";
+import type { PageFetchClass } from "@/shared/audit-fetch-class";
 import { MIN_AUDIT_PAGES, PAID_MAX_AUDIT_PAGES } from "@/shared/audit-limits";
 import { jsonCodec } from "@/shared/json";
 
@@ -11,6 +12,10 @@ export type LighthouseStrategy = "auto" | "none";
 export interface AuditConfig {
   maxPages: number;
   lighthouseStrategy: LighthouseStrategy;
+  /** Detected from the start URL's `powered-by` response header. */
+  sitePlatform?: "shopify";
+  /** Which crawler-access credential the crawl replayed, if any. */
+  crawlerCredentialId?: string;
 }
 
 // Read-side only (writes stringify a typed AuditConfig). Stored rows may hold
@@ -29,6 +34,10 @@ const lighthouseStrategySchema = z
 const auditConfigSchema = z.object({
   maxPages: z.number().int().min(MIN_AUDIT_PAGES).max(PAID_MAX_AUDIT_PAGES),
   lighthouseStrategy: lighthouseStrategySchema,
+  // Absent on every audit stored before crawler access shipped, and a future
+  // platform value must not make an old report unviewable.
+  sitePlatform: z.literal("shopify").optional().catch(undefined),
+  crawlerCredentialId: z.string().optional().catch(undefined),
 });
 
 const auditConfigCodec = jsonCodec(auditConfigSchema);
@@ -38,9 +47,6 @@ export function parseAuditConfig(configRaw: string | null): AuditConfig | null {
   const result = auditConfigCodec.safeParse(configRaw);
   return result.success ? result.data : null;
 }
-
-/** How a page fetch resolved. "blocked" = WAF/bot challenge stood in the way. */
-export type PageFetchClass = "ok" | "blocked" | "error";
 
 /** One outgoing link edge, deduped by target URL within a page. */
 export interface PageLink {
@@ -146,6 +152,12 @@ export interface CrawledPageResult {
    * response time is measured at headers and says nothing about body size.
    */
   htmlBytes: number;
+  /**
+   * True when a 429 was retried for this URL (whatever the retry returned).
+   * Not persisted — narrows the crawl window so the pages after it are
+   * fetched more slowly.
+   */
+  rateLimited: boolean;
   imagesTotal: number;
   imagesMissingAlt: number;
   images: Array<{ src: string | null; alt: string | null }>;
