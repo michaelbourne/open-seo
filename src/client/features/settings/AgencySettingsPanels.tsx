@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   getOrganizationBranding,
@@ -22,6 +22,14 @@ export function AgencySettingsPanels() {
   );
 }
 
+function FieldLabel({ children }: { children: string }) {
+  return (
+    <span className="text-[11px] font-semibold uppercase tracking-wide text-base-content/60">
+      {children}
+    </span>
+  );
+}
+
 function UsageBudgetPanel() {
   const queryClient = useQueryClient();
   const { data } = useQuery({
@@ -30,6 +38,14 @@ function UsageBudgetPanel() {
   });
   const [budget, setBudget] = useState("");
   const [dailyAgent, setDailyAgent] = useState("");
+  const [seeded, setSeeded] = useState(false);
+
+  useEffect(() => {
+    if (!data || seeded) return;
+    setBudget(data.budget?.toString() ?? "");
+    setDailyAgent(data.settings.dailyAgentBudgetUsd?.toString() ?? "");
+    setSeeded(true);
+  }, [data, seeded]);
 
   const saveMutation = useMutation({
     mutationFn: () =>
@@ -60,22 +76,20 @@ function UsageBudgetPanel() {
         Spent this month: ${data?.monthSpend?.toFixed(2) ?? "0.00"}
         {data?.budget != null ? ` / $${data.budget.toFixed(2)} cap` : ""}
       </p>
-      <label className="form-control w-full max-w-xs">
-        <span className="label-text text-xs">Monthly budget (USD)</span>
+      <label className="form-control w-full max-w-xs gap-1.5">
+        <FieldLabel>Monthly budget (USD)</FieldLabel>
         <input
-          className="input input-bordered input-sm"
-          placeholder={data?.budget?.toString() ?? "No cap"}
+          className="input input-bordered input-sm w-full"
+          placeholder="No cap"
           value={budget}
           onChange={(e) => setBudget(e.target.value)}
         />
       </label>
-      <label className="form-control w-full max-w-xs">
-        <span className="label-text text-xs">Daily SAM agent cap (USD)</span>
+      <label className="form-control w-full max-w-xs gap-1.5">
+        <FieldLabel>Daily SAM agent cap (USD)</FieldLabel>
         <input
-          className="input input-bordered input-sm"
-          placeholder={
-            data?.settings.dailyAgentBudgetUsd?.toString() ?? "No cap"
-          }
+          className="input input-bordered input-sm w-full"
+          placeholder="No cap"
           value={dailyAgent}
           onChange={(e) => setDailyAgent(e.target.value)}
         />
@@ -101,6 +115,16 @@ function BrandingPanel() {
   const [logoUrl, setLogoUrl] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#2563eb");
   const [footerText, setFooterText] = useState("");
+  const [seeded, setSeeded] = useState(false);
+
+  useEffect(() => {
+    if (!data || seeded) return;
+    setAgencyName(data.agencyName ?? "");
+    setLogoUrl(data.logoUrl ?? "");
+    setPrimaryColor(data.primaryColorHex ?? "#2563eb");
+    setFooterText(data.footerText ?? "");
+    setSeeded(true);
+  }, [data, seeded]);
 
   const saveMutation = useMutation({
     mutationFn: () =>
@@ -124,30 +148,42 @@ function BrandingPanel() {
       <h2 className="text-sm font-medium text-base-content/50">
         Report branding
       </h2>
-      <input
-        className="input input-bordered input-sm w-full max-w-md"
-        placeholder={data?.agencyName ?? "Agency name"}
-        value={agencyName}
-        onChange={(e) => setAgencyName(e.target.value)}
-      />
-      <input
-        className="input input-bordered input-sm w-full max-w-md"
-        placeholder={data?.logoUrl ?? "Logo URL (HTTPS)"}
-        value={logoUrl}
-        onChange={(e) => setLogoUrl(e.target.value)}
-      />
-      <input
-        className="input input-bordered input-sm w-full max-w-xs"
-        placeholder="Primary color"
-        value={primaryColor}
-        onChange={(e) => setPrimaryColor(e.target.value)}
-      />
-      <textarea
-        className="textarea textarea-bordered textarea-sm w-full max-w-md"
-        placeholder="Footer text"
-        value={footerText}
-        onChange={(e) => setFooterText(e.target.value)}
-      />
+      <label className="form-control w-full max-w-md gap-1.5">
+        <FieldLabel>Agency name</FieldLabel>
+        <input
+          className="input input-bordered input-sm w-full"
+          placeholder="Agency"
+          value={agencyName}
+          onChange={(e) => setAgencyName(e.target.value)}
+        />
+      </label>
+      <label className="form-control w-full max-w-md gap-1.5">
+        <FieldLabel>Logo URL</FieldLabel>
+        <input
+          className="input input-bordered input-sm w-full"
+          placeholder="https://…"
+          value={logoUrl}
+          onChange={(e) => setLogoUrl(e.target.value)}
+        />
+      </label>
+      <label className="form-control w-full max-w-xs gap-1.5">
+        <FieldLabel>Primary color</FieldLabel>
+        <input
+          className="input input-bordered input-sm w-full"
+          placeholder="#2563eb"
+          value={primaryColor}
+          onChange={(e) => setPrimaryColor(e.target.value)}
+        />
+      </label>
+      <label className="form-control w-full max-w-md gap-1.5">
+        <FieldLabel>Footer text</FieldLabel>
+        <textarea
+          className="textarea textarea-bordered textarea-sm w-full"
+          placeholder="Optional footer for reports"
+          value={footerText}
+          onChange={(e) => setFooterText(e.target.value)}
+        />
+      </label>
       <button
         type="button"
         className="btn btn-primary btn-sm"

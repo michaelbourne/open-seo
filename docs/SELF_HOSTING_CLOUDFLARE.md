@@ -58,11 +58,13 @@ pnpm deploy:selfhost --yes
 
 This provisions the D1 database, KV namespaces, and R2 bucket, applies the database migrations, deploys the Worker, and creates the Cloudflare Access application protecting it (allowing exactly `ACCESS_ALLOWED_EMAILS`). If the account has no Zero Trust team yet, one is created for you, named after your workers.dev subdomain.
 
+To serve a custom hostname (Workers Custom Domain + Access on that host), set `SELFHOST_DOMAIN` in `.env.selfhost` (for example `seo.ursa6.com`). The zone must already be on the same Cloudflare account.
+
 To manage the Access application yourself instead, set `TEAM_DOMAIN` (`https://your-team.cloudflareaccess.com`) and `POLICY_AUD` (the application's audience tag) in `.env.selfhost` — the deploy then provisions no Access resources.
 
 ## 5) Validate setup
 
-1. Open the Worker URL printed at the end of the deploy.
+1. Open the custom domain (if you set `SELFHOST_DOMAIN`) or the Worker URL printed at the end of the deploy.
 2. Sign in with Cloudflare Access.
 3. OpenSEO should load after login.
 

@@ -21,6 +21,8 @@ data, or sensitive paths.
 
 ## Resolved
 
+- [x] `2026-08-11T00:49:00Z` — `cursor` — `pnpm alchemy …` used Unix `NODE_OPTIONS=…` which fails on Windows cmd. Fixed via `scripts/run-alchemy.mjs` (`2026-08-11`).
+
 Move fixed entries here, mark them checked, and append the resolving date or commit.
 
 ## badseo harness vs `wrangler dev`: sitemap emits badseo.dev locs locally

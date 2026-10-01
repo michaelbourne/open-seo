@@ -172,6 +172,8 @@ const resolveSelfHostAccess = (
   stage: string,
   provision: boolean,
   workersSubdomain: string,
+  /** Public hostname protected by Access (custom domain or workers.dev). */
+  accessHostname: string | undefined,
 ) =>
   Effect.gen(function* () {
     let teamDomain = yield* optionalVar("TEAM_DOMAIN");
@@ -246,7 +248,7 @@ const resolveSelfHostAccess = (
         applicationId: "SelfHostAccess",
         policyName: `open-seo ${stage} self-host users`,
         applicationName: `open-seo ${stage}`,
-        domain: `${workerName(stage)}.${subdomain}`,
+        domain: accessHostname || `${workerName(stage)}.${subdomain}`,
         emails: allowedEmails,
       });
       policyAud = application.aud;
@@ -308,6 +310,13 @@ export default Alchemy.Stack(
     );
     const databaseProvider = yield* optionalVar("DATABASE_PROVIDER");
     const workersSubdomain = yield* readWorkersSubdomain({ required: false });
+    // Optional custom hostname for Cloudflare self-host (e.g. seo.ursa6.com).
+    // When set, Alchemy attaches it as a Workers Custom Domain and puts the
+    // Access application on that hostname instead of the workers.dev URL.
+    const selfhostDomain = (yield* optionalVar("SELFHOST_DOMAIN")).replace(
+      /^https?:\/\//,
+      "",
+    );
 
     // Auth needs an absolute BETTER_AUTH_URL. Prod sets it explicitly;
     // previews always derive it from the deterministic worker name — a wrong
@@ -349,12 +358,20 @@ export default Alchemy.Stack(
       stage,
       authMode === "cloudflare_access" && !prod,
       workersSubdomain,
+      selfhostDomain || undefined,
     );
+
+    const workerDomains = prod
+      ? ["app.openseo.so", "www.app.openseo.so"]
+      : authMode === "cloudflare_access" && selfhostDomain
+        ? [selfhostDomain]
+        : undefined;
 
     const app = yield* Cloudflare.Worker("open-seo", {
       name: workerName(stage),
       // Prod serves the real domains; the zone is inferred from the hostname.
-      domain: prod ? ["app.openseo.so", "www.app.openseo.so"] : undefined,
+      // Self-host may set SELFHOST_DOMAIN for a Custom Domain in this account.
+      domain: workerDomains,
       // Prebuilt worker from `vite build` (@cloudflare/vite-plugin). The entry
       // exports the DO + WorkflowEntrypoint classes (re-exported by
       // src/server.ts), which `bundle: false` requires. Sibling chunks under
