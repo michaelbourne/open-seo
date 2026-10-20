@@ -55,7 +55,12 @@ vi.mock("@/server/lib/posthog", () => ({
   captureServerEvent: vi.fn(),
 }));
 
+vi.mock("@/server/email/onboarding-drip", () => ({
+  sendCreditsExhaustedEvent: vi.fn(),
+}));
+
 import { captureServerEvent } from "@/server/lib/posthog";
+import { sendCreditsExhaustedEvent } from "@/server/email/onboarding-drip";
 import { AUTUMN_TRACK_RETRY_OPTIONS } from "@/server/billing/autumn";
 import {
   customerHasPaidPlan,
@@ -206,10 +211,12 @@ describe("reserveUsageCredits", () => {
         : { allowed: true, balance: { remaining: 900 } },
     );
 
-    const hold = await reserveUsageCredits({
+    const {
+      holds: [hold],
+    } = await reserveUsageCredits({
       customer,
       customerId: "org_123",
-      estimatedCredits: 100,
+      callCredits: [100],
       creditFeature: "backlinks",
     });
 
@@ -228,6 +235,73 @@ describe("reserveUsageCredits", () => {
     expect(topupCall.lock?.expiresAt).toBeGreaterThan(Date.now() + 29 * 60_000);
   });
 
+  it("places each call where its own hold would land: monthly first, else top-up, else refused", async () => {
+    // Monthly 3, top-up 20; calls of 7, 3 and 30 credits. Per call: the 7
+    // misses monthly and lands on top-up, the 3 fits monthly, the 30 fits
+    // neither. Top-up alone could cover 7 + 3 but must not take the 3.
+    const remaining = { monthly: 3, topup: 20 };
+    checkMock.mockImplementation(async ({ featureId, requiredBalance = 1 }) => {
+      const balance =
+        featureId === AUTUMN_SEO_DATA_BALANCE_FEATURE_ID
+          ? remaining.monthly
+          : remaining.topup;
+      return {
+        allowed: balance >= requiredBalance,
+        balance: { remaining: balance },
+      };
+    });
+
+    const reserved = await reserveUsageCredits({
+      customer,
+      customerId: "org_123",
+      callCredits: [7, 3, 30],
+    });
+
+    expect(reserved).toMatchObject({
+      holds: [
+        {
+          featureId: AUTUMN_SEO_DATA_BALANCE_FEATURE_ID,
+          estimatedCredits: 3,
+          callIndexes: [1],
+        },
+        {
+          featureId: AUTUMN_SEO_DATA_TOPUP_BALANCE_FEATURE_ID,
+          estimatedCredits: 7,
+          callIndexes: [0],
+        },
+      ],
+      refusedCalls: [2],
+    });
+    expect(vi.mocked(captureServerEvent).mock.calls[0][0]).toMatchObject({
+      event: "usage:credits_gate_refused",
+      properties: { estimated_credits: 30 },
+    });
+  });
+
+  it("releases an earlier hold when a later one fails", async () => {
+    checkMock.mockImplementation(async ({ featureId, requiredBalance = 1 }) => {
+      if (featureId !== AUTUMN_SEO_DATA_BALANCE_FEATURE_ID) {
+        throw new Error("socket hang up");
+      }
+      return { allowed: requiredBalance <= 3, balance: { remaining: 3 } };
+    });
+    finalizeMock.mockResolvedValue({ success: true });
+
+    await expect(
+      reserveUsageCredits({
+        customer,
+        customerId: "org_123",
+        callCredits: [3, 3],
+      }),
+    ).rejects.toThrow("socket hang up");
+
+    const monthlyHold = checkMock.mock.calls[1][0];
+    expect(monthlyHold.requiredBalance).toBe(3);
+    expect(finalizeMock.mock.calls.map(([arg]) => arg)).toMatchObject([
+      { lockId: monthlyHold.lock?.lockId, action: "release" },
+    ]);
+  });
+
   it("refuses when neither pool covers the estimate and reports it", async () => {
     // An org that never topped up reads allowed:false + balance:null on
     // topup_credits: a refusal, not a broken read.
@@ -241,7 +315,7 @@ describe("reserveUsageCredits", () => {
       reserveUsageCredits({
         customer,
         customerId: "org_123",
-        estimatedCredits: 100,
+        callCredits: [100],
         creditFeature: "backlinks",
       }),
     ).rejects.toMatchObject({ code: "INSUFFICIENT_CREDITS" });
@@ -255,6 +329,7 @@ describe("reserveUsageCredits", () => {
         credit_feature: "backlinks",
       },
     });
+    expect(sendCreditsExhaustedEvent).toHaveBeenCalledWith(customer);
   });
 
   it("retries a fail-open read once with the same lock, then fails closed", async () => {
@@ -264,7 +339,7 @@ describe("reserveUsageCredits", () => {
     const result = reserveUsageCredits({
       customer,
       customerId: "org_123",
-      estimatedCredits: 100,
+      callCredits: [100],
     });
     const assertion = expect(result).rejects.toMatchObject({
       code: "INTERNAL_ERROR",
@@ -296,13 +371,17 @@ describe("reserveUsageCredits", () => {
     const result = reserveUsageCredits({
       customer,
       customerId: "org_123",
-      estimatedCredits: 100,
+      callCredits: [100],
     });
     await vi.runAllTimersAsync();
 
     await expect(result).resolves.toMatchObject({
-      featureId: AUTUMN_SEO_DATA_BALANCE_FEATURE_ID,
-      lockId: checkMock.mock.calls[0][0].lock?.lockId,
+      holds: [
+        {
+          featureId: AUTUMN_SEO_DATA_BALANCE_FEATURE_ID,
+          lockId: checkMock.mock.calls[0][0].lock?.lockId,
+        },
+      ],
     });
     expect(checkMock).toHaveBeenCalledTimes(2);
   });
@@ -313,6 +392,7 @@ describe("settleUsageCredits", () => {
     lockId: "dfs_org_123_lock",
     featureId: AUTUMN_SEO_DATA_BALANCE_FEATURE_ID,
     estimatedCredits: 100,
+    callIndexes: [0],
   } as const;
   const cost = { costUsd: 0.05, path: ["v3", "backlinks", "summary", "live"] };
 
@@ -323,7 +403,7 @@ describe("settleUsageCredits", () => {
   it("releases the hold when nothing was billed", async () => {
     finalizeMock.mockResolvedValue({ success: true });
 
-    await settleUsageCredits({ customer, hold, cost: null });
+    await settleUsageCredits({ customer, hold, costs: [] });
 
     expect(finalizeMock).toHaveBeenCalledTimes(1);
     expect(finalizeMock.mock.calls[0][0]).toMatchObject({
@@ -349,7 +429,7 @@ describe("settleUsageCredits", () => {
       customer,
       hold,
       creditFeature: "backlinks",
-      cost,
+      costs: [cost],
     });
     await vi.runAllTimersAsync();
 
@@ -368,7 +448,7 @@ describe("settleUsageCredits", () => {
       customer,
       hold,
       creditFeature: "backlinks",
-      cost,
+      costs: [cost],
     });
     await vi.runAllTimersAsync();
 

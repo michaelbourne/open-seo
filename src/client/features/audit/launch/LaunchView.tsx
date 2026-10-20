@@ -35,6 +35,9 @@ export function LaunchView({
           launchForm={controller.launchForm}
           commitMaxPagesInput={controller.commitMaxPagesInput}
           maxPagesLimit={controller.maxPagesLimit}
+          paidMaxPagesLimit={controller.paidMaxPagesLimit}
+          canRenderJavaScript={controller.canRenderJavaScript}
+          outOfCredits={controller.outOfCredits}
         />
 
         <AuditHistorySection

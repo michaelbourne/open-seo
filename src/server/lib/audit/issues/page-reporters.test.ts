@@ -62,6 +62,33 @@ function issueTypes(page: CrawledPageResult): string[] {
 }
 
 describe("runPageReporters", () => {
+  it("keeps known signals on an unread shell without inventing missing-content issues", () => {
+    const types = issueTypes(
+      makePage({
+        javascriptShell: true,
+        title: "",
+        metaDescription: "",
+        h1Count: 0,
+        wordCount: 1,
+        links: [],
+        isIndexable: false,
+        robotsMeta: "noindex",
+        canonicalUrl: "https://example.com/canonical",
+        headerCanonicalUrl: "https://example.com/header-canonical",
+        responseTimeMs: 2000,
+        crawlDepth: 5,
+      }),
+    );
+    expect(types).toEqual([
+      "slow-response",
+      "noindex-page",
+      "canonical-conflict",
+      "canonicalized-page",
+      "deep-page",
+      "javascript-rendering-suspected",
+    ]);
+  });
+
   it("reports nothing for a healthy page", () => {
     expect(issueTypes(makePage({}))).toEqual([]);
   });
@@ -119,12 +146,12 @@ describe("runPageReporters", () => {
     expect(issueTypes(makePage(overrides))).not.toContain(issueType);
   });
 
-  it("reports the measured length with a short meta description", () => {
+  it("reports the offending meta description with its length and the guideline", () => {
     expect(
       runPageReporters(makePage({ metaDescription: "x".repeat(69) })).find(
         (issue) => issue.issueType === "meta-description-too-short",
       )?.details,
-    ).toEqual({ length: 69 });
+    ).toEqual({ length: 69, min: 70, description: "x".repeat(69) });
   });
 
   // The same empty shell: a PDF gets no content checks, an HTML page all of them.
