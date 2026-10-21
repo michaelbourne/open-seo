@@ -37,6 +37,7 @@ data, or sensitive paths.
 
 ## Resolved
 
+- [x] `2026-10-21T00:50:00Z` — `agent` — `pnpm alchemy` and therefore `pnpm deploy:selfhost` fail on Windows with `'NODE_OPTIONS' is not recognized`, because the script is a bash assignment and pnpm runs it with cmd.exe even from Git Bash. Resolved 2026-10-20: `package.json` calls `node scripts/run-alchemy.mjs`, which sets the flag and spawns the Alchemy CLI.
 - [x] `2026-09-17T18:50:14Z` — `codex` — Fumadocs MDX 11 compiles `.md?raw` imports into components, so shared prompt imports pass type checking but crash docs rendering with `trim is not a function`. Resolved 2026-09-17: the web Vite config leaves `?raw` imports to Vite; browser-check shared Markdown prompts when changing this integration.
 
 - [x] `2026-08-20T20:36:32Z` — `codex` — The preview Access check immediately classified a workers.dev 404 as public. Resolved 2026-09-05: 404s use the existing bounded retry loop; exhaustion fails without claiming the preview is protected or public.

@@ -3,6 +3,7 @@ import { ApiKeySettings } from "@/client/features/settings/ApiKeySettings";
 import { SectionHeader } from "@/client/components/PageHeader";
 import { ThemePreferenceRadio } from "@/client/components/ThemePreferenceMenuItems";
 import { PrivacySettings } from "@/client/features/settings/PrivacySettings";
+import { UsageBudgetSettings } from "@/client/features/settings/UsageBudgetSettings";
 import { isHostedClientAuthMode } from "@/lib/auth-mode";
 import { version } from "../../../../package.json";
 
@@ -29,15 +30,18 @@ function PersonalSettings() {
           <PrivacySettings />
         </>
       ) : (
-        <section className="space-y-3">
-          <SectionHeader title="About" />
-          <div className="flex items-center justify-between gap-6">
-            <span className="text-sm">Version</span>
-            <span className="font-mono text-sm text-muted-foreground">
-              v{version}
-            </span>
-          </div>
-        </section>
+        <>
+          <UsageBudgetSettings />
+          <section className="space-y-3">
+            <SectionHeader title="About" />
+            <div className="flex items-center justify-between gap-6">
+              <span className="text-sm">Version</span>
+              <span className="font-mono text-sm text-muted-foreground">
+                v{version}
+              </span>
+            </div>
+          </section>
+        </>
       )}
     </div>
   );

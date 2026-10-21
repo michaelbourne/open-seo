@@ -28,19 +28,17 @@ import { ProjectContextService } from "@/server/features/project-context/service
 import { ProjectRepository } from "@/server/features/projects/repositories/ProjectRepository";
 import { buildSamSkillSource } from "@/server/features/sam/samSkills";
 import { buildSamSystemPrompt } from "@/server/features/sam/samSystemPrompt";
-import {
-  SamTelemetry,
-  type SamTurnStats,
-} from "@/server/features/sam/samTurnTelemetry";
+import { SamTelemetry } from "@/server/features/sam/samTurnTelemetry";
 import { buildChatAgentModel } from "@/server/lib/openrouter";
 import {
   getEnvValueSync,
   isHostedServerAuthMode,
 } from "@/server/lib/runtime-env";
+import { checkUsageCreditsDepleted } from "@/server/billing/subscription";
 import {
-  checkUsageCreditsDepleted,
-  trackUsageCreditSpend,
-} from "@/server/billing/subscription";
+  queueAgentSpend,
+  selfHostAgentTurnRefusal,
+} from "@/server/features/sam/samAgentSpend";
 import { getPublicOrigin } from "@/server/mcp/public-origin";
 import { MCP_SCOPE } from "@/lib/oauth-resource";
 import { AuthRepository } from "@/server/auth/repositories/AuthRepository";
@@ -52,15 +50,6 @@ import type { ToolAuthContext } from "@/server/mcp/context";
 const PROJECT_CONTEXT_BLOCK = "project_context";
 
 const PUBLIC_ORIGIN_KEY = "sam-public-origin";
-
-// Batching threshold for metering, not a charge: the user pays the turn's
-// actual OpenRouter cost (times the usual markup) whatever this is set to.
-// Spend accumulates step by step and is sent to Autumn once the unbilled
-// total reaches this much, with the remainder flushed when the turn ends —
-// so a $0.50 turn is ~10 Autumn calls rather than one per step, and a turn
-// the isolate kills mid-way has at most this much unbilled. Each call rounds
-// up to a whole credit (a tenth of a cent).
-const SAM_BILLING_CHUNK_USD = 0.05;
 
 // Long tool-heavy turns are what outgrow the Durable Object memory limit; the
 // model's 1M-token window never gets a say. Compact between turns past this
@@ -345,6 +334,12 @@ export class SamChatAgent extends Think {
           );
         }
         this.turnMonthlyRemaining = monthlyRemaining;
+      } else {
+        const refusal = await selfHostAgentTurnRefusal(organizationId);
+        if (refusal) {
+          turn.refusal = "credits";
+          return this.refusalTurn(refusal);
+        }
       }
 
       const baseUrl =
@@ -403,51 +398,28 @@ export class SamChatAgent extends Think {
   }
 
   // Add spend to the turn's unbilled total and meter it once a chunk has
-  // accumulated, or on `flush` at the end of the turn. Self-hosted turns (no
-  // armed balance) are never metered.
+  // accumulated, or on `flush` at the end of the turn.
   private recordSpend(costUsd: number, { flush = false } = {}): void {
-    this.turnUnbilledUsd += costUsd;
     this.telemetry.spend(costUsd);
-    const armed = this.turnMonthlyRemaining;
-    if (armed === null) return;
-    if (!flush && this.turnUnbilledUsd < SAM_BILLING_CHUNK_USD) return;
-    const chunkUsd = this.turnUnbilledUsd;
-    this.turnUnbilledUsd = 0;
-    const turn = this.telemetry.turn;
-    this.billing = this.billing
-      .then(() => this.meterSpend(chunkUsd, armed, turn))
-      .catch((error: unknown) => {
-        console.error("[sam] credit metering failed", error);
-        this.telemetry.captureError(error, { stage: "metering" });
-      });
-  }
-
-  private async meterSpend(
-    costUsd: number,
-    armedMonthlyRemaining: number,
-    turn: SamTurnStats | null,
-  ): Promise<void> {
-    const ctx = await withPgClient(() => this.loadSamContext());
-    if (!ctx) return;
-    // Earlier chunks in the chain have already drawn the monthly balance
-    // down; the value captured at enqueue time only covers a flush that
-    // outlives its turn (onChatError), where the field has been re-armed.
-    const { monthlyCredits, topupCredits } = await trackUsageCreditSpend({
-      customer: {
-        userId: ctx.row.userId,
-        userEmail: ctx.userEmail,
-        organizationId: ctx.project.organizationId,
-        projectId: ctx.project.id,
-      },
-      customerId: ctx.project.organizationId,
-      creditFeature: "agent",
+    const next = queueAgentSpend({
       costUsd,
-      monthlyRemaining: this.turnMonthlyRemaining ?? armedMonthlyRemaining,
-      properties: { provider: "openrouter", turn_id: turn?.turnId },
+      flush,
+      unbilledUsd: this.turnUnbilledUsd,
+      armedMonthlyRemaining: this.turnMonthlyRemaining,
+      getMonthlyRemaining: () => this.turnMonthlyRemaining,
+      billing: this.billing,
+      turn: this.telemetry.turn,
+      loadContext: () => this.loadSamContext(),
+      onCredits: (credits) => {
+        if (this.turnMonthlyRemaining !== null)
+          this.turnMonthlyRemaining -= credits;
+      },
+      onMeterError: (error) => {
+        this.telemetry.captureError(error, { stage: "metering" });
+      },
     });
-    if (turn) turn.credits += monthlyCredits + topupCredits;
-    if (this.turnMonthlyRemaining !== null)
-      this.turnMonthlyRemaining -= monthlyCredits;
+    this.turnUnbilledUsd = next.unbilledUsd;
+    this.billing = next.billing;
   }
 
   async onChatResponse(result: ChatResponseResult): Promise<void> {

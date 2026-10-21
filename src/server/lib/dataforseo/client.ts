@@ -65,6 +65,7 @@ import {
 } from "@/server/lib/dataforseo/ai-tracking";
 import { isHostedServerAuthMode } from "@/server/lib/runtime-env";
 import { AppError } from "@/server/lib/errors";
+import { recordSelfHostedUsage } from "@/server/features/usage/services/UsageService";
 
 export { mapDataforseoPathToCreditFeature };
 
@@ -341,7 +342,19 @@ async function meterDataforseoCalls<T>(
 
   if (!isHostedMode) {
     return Promise.allSettled(
-      executes.map(async (execute) => (await execute()).data),
+      executes.map(async (execute) => {
+        const result = await execute();
+        const feature =
+          creditFeature ?? mapDataforseoPathToCreditFeature(result.billing.path);
+        await recordSelfHostedUsage({
+          organizationId: customer.organizationId,
+          creditFeature: feature,
+          costUsd: result.billing.costUsd,
+          apiPath: result.billing.path.join("/"),
+          projectId: customer.projectId,
+        });
+        return result.data;
+      }),
     );
   }
 

@@ -26,6 +26,9 @@ vi.mock("@/server/lib/runtime-env", () => ({
 vi.mock("@/server/billing/subscription", () => ({
   customerHasPaidPlan: mocks.customerHasPaidPlan,
 }));
+vi.mock("@/server/features/usage/services/UsageService", () => ({
+  assertUsageBudgetForEstimate: vi.fn(),
+}));
 vi.mock("@/server/lib/dataforseo", () => ({ createDataforseoClient: vi.fn() }));
 vi.mock(
   "@/server/features/rank-tracking/repositories/RankTrackingRepository",

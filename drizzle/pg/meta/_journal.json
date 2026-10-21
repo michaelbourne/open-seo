@@ -267,6 +267,13 @@
       "when": 1792089547475,
       "tag": "0037_smooth_lady_ursula",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1792539089104,
+      "tag": "0038_local_map_rank_and_usage_budgets",
+      "breakpoints": true
     }
   ]
 }

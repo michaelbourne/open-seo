@@ -62,6 +62,7 @@ import { Route as ApiGscOauthCallbackRouteImport } from './routes/api/gsc/oauth/
 import { Route as AppPProjectIdAiVisibilityIndexRouteImport } from './routes/_app/p/$projectId/ai-visibility/index'
 import { Route as AppPProjectIdAiVisibilityResearchRouteImport } from './routes/_app/p/$projectId/ai-visibility/research'
 import { Route as AppPProjectIdAuditIndexRouteImport } from './routes/_app/p/$projectId/audit/index'
+import { Route as AppPProjectIdLocalRankIndexRouteImport } from './routes/_app/p/$projectId/local-rank/index'
 import { Route as AppPProjectIdRankTrackingIndexRouteImport } from './routes/_app/p/$projectId/rank-tracking/index'
 import { Route as AppPProjectIdRankTrackingConfigIdRouteImport } from './routes/_app/p/$projectId/rank-tracking/$configId'
 import { Route as AppPProjectIdReportsIndexRouteImport } from './routes/_app/p/$projectId/reports/index'
@@ -345,6 +346,12 @@ const AppPProjectIdAuditIndexRoute = AppPProjectIdAuditIndexRouteImport.update({
   path: '/audit/',
   getParentRoute: () => AppPProjectIdRouteRoute,
 } as any)
+const AppPProjectIdLocalRankIndexRoute =
+  AppPProjectIdLocalRankIndexRouteImport.update({
+    id: '/local-rank/',
+    path: '/local-rank/',
+    getParentRoute: () => AppPProjectIdRouteRoute,
+  } as any)
 const AppPProjectIdRankTrackingIndexRoute =
   AppPProjectIdRankTrackingIndexRouteImport.update({
     id: '/',
@@ -462,6 +469,7 @@ export interface FileRoutesByFullPath {
   '/p/$projectId/settings/integrations': typeof AppPProjectIdSettingsIntegrationsRoute
   '/p/$projectId/ai-visibility/': typeof AppPProjectIdAiVisibilityIndexRoute
   '/p/$projectId/audit/': typeof AppPProjectIdAuditIndexRoute
+  '/p/$projectId/local-rank/': typeof AppPProjectIdLocalRankIndexRoute
   '/p/$projectId/rank-tracking/': typeof AppPProjectIdRankTrackingIndexRoute
   '/p/$projectId/reports/': typeof AppPProjectIdReportsIndexRoute
   '/p/$projectId/settings/': typeof AppPProjectIdSettingsIndexRoute
@@ -519,6 +527,7 @@ export interface FileRoutesByTo {
   '/p/$projectId/settings/integrations': typeof AppPProjectIdSettingsIntegrationsRoute
   '/p/$projectId/ai-visibility': typeof AppPProjectIdAiVisibilityIndexRoute
   '/p/$projectId/audit': typeof AppPProjectIdAuditIndexRoute
+  '/p/$projectId/local-rank': typeof AppPProjectIdLocalRankIndexRoute
   '/p/$projectId/rank-tracking': typeof AppPProjectIdRankTrackingIndexRoute
   '/p/$projectId/reports': typeof AppPProjectIdReportsIndexRoute
   '/p/$projectId/settings': typeof AppPProjectIdSettingsIndexRoute
@@ -585,6 +594,7 @@ export interface FileRoutesById {
   '/_app/p/$projectId/settings/integrations': typeof AppPProjectIdSettingsIntegrationsRoute
   '/_app/p/$projectId/ai-visibility/': typeof AppPProjectIdAiVisibilityIndexRoute
   '/_app/p/$projectId/audit/': typeof AppPProjectIdAuditIndexRoute
+  '/_app/p/$projectId/local-rank/': typeof AppPProjectIdLocalRankIndexRoute
   '/_app/p/$projectId/rank-tracking/': typeof AppPProjectIdRankTrackingIndexRoute
   '/_app/p/$projectId/reports/': typeof AppPProjectIdReportsIndexRoute
   '/_app/p/$projectId/settings/': typeof AppPProjectIdSettingsIndexRoute
@@ -649,6 +659,7 @@ export interface FileRouteTypes {
     | '/p/$projectId/settings/integrations'
     | '/p/$projectId/ai-visibility/'
     | '/p/$projectId/audit/'
+    | '/p/$projectId/local-rank/'
     | '/p/$projectId/rank-tracking/'
     | '/p/$projectId/reports/'
     | '/p/$projectId/settings/'
@@ -706,6 +717,7 @@ export interface FileRouteTypes {
     | '/p/$projectId/settings/integrations'
     | '/p/$projectId/ai-visibility'
     | '/p/$projectId/audit'
+    | '/p/$projectId/local-rank'
     | '/p/$projectId/rank-tracking'
     | '/p/$projectId/reports'
     | '/p/$projectId/settings'
@@ -771,6 +783,7 @@ export interface FileRouteTypes {
     | '/_app/p/$projectId/settings/integrations'
     | '/_app/p/$projectId/ai-visibility/'
     | '/_app/p/$projectId/audit/'
+    | '/_app/p/$projectId/local-rank/'
     | '/_app/p/$projectId/rank-tracking/'
     | '/_app/p/$projectId/reports/'
     | '/_app/p/$projectId/settings/'
@@ -1173,6 +1186,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPProjectIdAuditIndexRouteImport
       parentRoute: typeof AppPProjectIdRouteRoute
     }
+    '/_app/p/$projectId/local-rank/': {
+      id: '/_app/p/$projectId/local-rank/'
+      path: '/local-rank'
+      fullPath: '/p/$projectId/local-rank/'
+      preLoaderRoute: typeof AppPProjectIdLocalRankIndexRouteImport
+      parentRoute: typeof AppPProjectIdRouteRoute
+    }
     '/_app/p/$projectId/rank-tracking/': {
       id: '/_app/p/$projectId/rank-tracking/'
       path: '/'
@@ -1332,6 +1352,7 @@ interface AppPProjectIdRouteRouteChildren {
   AppPProjectIdReportsReportIdRoute: typeof AppPProjectIdReportsReportIdRoute
   AppPProjectIdReportsTemplatesRoute: typeof AppPProjectIdReportsTemplatesRoute
   AppPProjectIdAuditIndexRoute: typeof AppPProjectIdAuditIndexRoute
+  AppPProjectIdLocalRankIndexRoute: typeof AppPProjectIdLocalRankIndexRoute
   AppPProjectIdReportsIndexRoute: typeof AppPProjectIdReportsIndexRoute
   AppPProjectIdAuditIssuesResultIdRoute: typeof AppPProjectIdAuditIssuesResultIdRoute
 }
@@ -1353,6 +1374,7 @@ const AppPProjectIdRouteRouteChildren: AppPProjectIdRouteRouteChildren = {
   AppPProjectIdReportsReportIdRoute: AppPProjectIdReportsReportIdRoute,
   AppPProjectIdReportsTemplatesRoute: AppPProjectIdReportsTemplatesRoute,
   AppPProjectIdAuditIndexRoute: AppPProjectIdAuditIndexRoute,
+  AppPProjectIdLocalRankIndexRoute: AppPProjectIdLocalRankIndexRoute,
   AppPProjectIdReportsIndexRoute: AppPProjectIdReportsIndexRoute,
   AppPProjectIdAuditIssuesResultIdRoute: AppPProjectIdAuditIssuesResultIdRoute,
 }

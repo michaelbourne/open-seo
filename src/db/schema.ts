@@ -11,6 +11,8 @@ import * as sqliteGa4 from "./ga4.schema";
 import * as sqliteGsc from "./gsc.schema";
 import * as sqliteTelemetry from "./telemetry.schema";
 import * as sqliteAiVisibility from "./ai-visibility.schema";
+import * as sqliteLocalMapRank from "./local-map-rank.schema";
+import * as sqliteUsageBudget from "./usage-budget.schema";
 import * as pgApp from "./pg/app.schema";
 import * as pgProjectContext from "./pg/project-context.schema";
 import * as pgReports from "./pg/reports.schema";
@@ -23,6 +25,8 @@ import * as pgGa4 from "./pg/ga4.schema";
 import * as pgGsc from "./pg/gsc.schema";
 import * as pgTelemetry from "./pg/telemetry.schema";
 import * as pgAiVisibility from "./pg/ai-visibility.schema";
+import * as pgLocalMapRank from "./pg/local-map-rank.schema";
+import * as pgUsageBudget from "./pg/usage-budget.schema";
 
 // Canonical schema barrel. Repositories import their tables from here and the
 // provider-aware `db` from "@/db", so each repository is written ONCE for both
@@ -45,7 +49,9 @@ type AppSchema = typeof sqliteApp &
   typeof sqliteGa4 &
   typeof sqliteGsc &
   typeof sqliteTelemetry &
-  typeof sqliteAiVisibility;
+  typeof sqliteAiVisibility &
+  typeof sqliteLocalMapRank &
+  typeof sqliteUsageBudget;
 
 const runtimeSchema =
   getDatabaseProvider() === "postgres"
@@ -62,6 +68,8 @@ const runtimeSchema =
         ...pgGsc,
         ...pgTelemetry,
         ...pgAiVisibility,
+        ...pgLocalMapRank,
+        ...pgUsageBudget,
       }
     : {
         ...sqliteApp,
@@ -76,6 +84,8 @@ const runtimeSchema =
         ...sqliteGsc,
         ...sqliteTelemetry,
         ...sqliteAiVisibility,
+        ...sqliteLocalMapRank,
+        ...sqliteUsageBudget,
       };
 
 // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- guarded by schema-parity.test.ts
@@ -127,4 +137,10 @@ export const {
   aiObservations,
   aiSources,
   aiMatches,
+  localMapCampaigns,
+  localMapKeywords,
+  localMapScanRuns,
+  localMapScanResults,
+  organizationUsageSettings,
+  organizationUsageLedger,
 } = schema;

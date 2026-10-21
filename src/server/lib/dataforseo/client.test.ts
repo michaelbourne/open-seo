@@ -29,6 +29,7 @@ const {
   finalizeMock,
   getOrCreateMock,
   isHostedServerAuthModeMock,
+  recordSelfHostedUsageMock,
   mockEnv,
 } = vi.hoisted(() => ({
   checkMock: vi.fn<(arg: CheckCallArg) => Promise<CheckResult>>(),
@@ -36,6 +37,7 @@ const {
     vi.fn<(arg: FinalizeCallArg) => Promise<{ success: boolean }>>(),
   getOrCreateMock: vi.fn(),
   isHostedServerAuthModeMock: vi.fn(),
+  recordSelfHostedUsageMock: vi.fn(),
   mockEnv: {},
 }));
 
@@ -65,6 +67,10 @@ vi.mock("@/server/billing/subscription", async (importOriginal) => {
 
 vi.mock("@/server/lib/runtime-env", () => ({
   isHostedServerAuthMode: isHostedServerAuthModeMock,
+}));
+
+vi.mock("@/server/features/usage/services/UsageService", () => ({
+  recordSelfHostedUsage: recordSelfHostedUsageMock,
 }));
 
 vi.mock("@/server/lib/posthog", () => ({
@@ -193,6 +199,13 @@ describe("meterDataforseoCall", () => {
     expect(result).toEqual({ rank: 42 });
     expect(checkMock).not.toHaveBeenCalled();
     expect(finalizeMock).not.toHaveBeenCalled();
+    expect(recordSelfHostedUsageMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        organizationId: billingCustomer.organizationId,
+        costUsd: RAW_COST,
+        creditFeature: "backlinks",
+      }),
+    );
   });
 
   it("never calls the provider when the hold is refused", async () => {

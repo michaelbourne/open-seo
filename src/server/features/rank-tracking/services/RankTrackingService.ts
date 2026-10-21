@@ -21,10 +21,14 @@ import {
   reconcileActiveRankCheckRun,
 } from "./rankCheckRunGuards";
 import {
+  costPerSerpAtDepth,
+  devicesCount,
   estimateRankCheckCredits,
   MAX_CONFIGS_PER_PROJECT,
   rankCheckCostApprovalError,
 } from "@/shared/rank-tracking";
+import { roundUsdForBilling } from "@/shared/billing";
+import { assertUsageBudgetForEstimate } from "@/server/features/usage/services/UsageService";
 import { resolveNextCheckAt } from "./configSchedule";
 import {
   getIsoCountryCode,
@@ -248,6 +252,16 @@ async function triggerCheck(input: {
       );
     }
   }
+
+  const keywordCount = input.keywordIds?.length || keywords.length;
+  await assertUsageBudgetForEstimate({
+    organizationId: input.billingCustomer.organizationId,
+    estimatedCostUsd: roundUsdForBilling(
+      keywordCount *
+        devicesCount(config.devices) *
+        costPerSerpAtDepth(config.serpDepth, "live"),
+    ),
+  });
 
   return beginRankCheckRun({
     workflow: env.RANK_CHECK_WORKFLOW,

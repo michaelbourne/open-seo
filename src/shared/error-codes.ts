@@ -21,6 +21,7 @@ const ERROR_CODES = [
   "RATE_LIMITED",
   "UPSTREAM_UNAVAILABLE",
   "CONFLICT",
+  "USAGE_BUDGET_EXCEEDED",
   "INTERNAL_ERROR",
 ] as const;
 
@@ -43,6 +44,7 @@ const NON_REPORTABLE_ERROR_CODES = new Set<ErrorCode>([
   "AUDIT_PAGE_LIMIT_EXCEEDED",
   "AUDIT_ALREADY_RUNNING",
   "AUDIT_RENDERING_UNAVAILABLE",
+  "USAGE_BUDGET_EXCEEDED",
   // An external provider (DataForSEO) failing on its own side. Nothing in the
   // app to fix, and it drowned real exceptions. Note the error handlers only
   // log what they capture, so every throw site warns on its own line to keep

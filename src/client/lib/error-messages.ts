@@ -43,6 +43,8 @@ const STANDARD_MESSAGES: Record<ErrorCode, string> = {
   UPSTREAM_UNAVAILABLE:
     "The data provider is temporarily unavailable. Please retry in a moment.",
   CONFLICT: "This request conflicts with existing data.",
+  USAGE_BUDGET_EXCEEDED:
+    "This would pass the spend cap in Settings. Raise the cap or wait until it resets.",
   INTERNAL_ERROR: UNEXPECTED_ERROR_MESSAGE,
 };
 

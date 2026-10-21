@@ -58,6 +58,8 @@ This provisions the D1 database, KV namespaces, and R2 bucket, applies the datab
 
 AI Visibility uses your `DATAFORSEO_API_KEY`; tracked questions are sent to DataForSEO and billed directly by the provider. Set `OPENROUTER_API_KEY` for setup research, Prompt Research, and generated prompt suggestions. Deployment configures background collection and a five-minute cron that dispatches due daily, weekly, or monthly checks. The app shows the collection cost before a check or schedule starts. See the [AI Visibility guide](/docs/ai-visibility).
 
+To serve OpenSEO on your own hostname, set `SELFHOST_DOMAIN` (for example `seo.example.com`) in `.env.selfhost`. The domain's zone must already be on the same Cloudflare account. The next deploy attaches that hostname to the Worker.
+
 ## 5) Validate setup
 
 1. Open the Worker URL printed at the end of the deploy.
